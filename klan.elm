@@ -22,8 +22,8 @@ box : (Int,Int) -> Form
 box s = rect (toFloat (fst s)) (toFloat (snd s))
         |> outlined (solid Color.black)
 
-centerline = traced (dashed Color.grey)
-  <| path [(-100,0),(100,0)]
+centerline w = traced (dashed Color.black)
+  <| path [(-(w/2),0),(w/2,0)]
 
 toFloatBoth (a,b) = (toFloat a, toFloat b)
 
@@ -36,7 +36,9 @@ bracketTextBox w h name = container w (h `div` 2)
                                   (playerText (brackName name))
 
 matchBox : Int -> Element -> Form
-matchBox s e = group (toForm e :: [box (200,50), centerline]) |> move(0,toFloat (60*s))
+matchBox s e = group ((rect 200 50 |> filled Color.green)
+                      :: (toForm e :: [box (200,50), centerline 200]))
+               |> move(-170,toFloat (-60*s))
 
 brackColumn : [Match] -> [Form]
 brackColumn matches =
@@ -46,6 +48,8 @@ brackColumn matches =
           matchBox i (flow down [brack top,
                                  brack bottom]))
         (zip matches [0..(length matches)])
+
+-- Temporary construction of matches
 
 toMatch : String -> String -> Match
 toMatch t b = Match ((Player . Brack_desc 0) t)
@@ -58,5 +62,6 @@ brackets = brackColumn <| [toMatch "Player 1" "Player 2",
                            toMatch "Player 7" "Player 8"]
           
 
-main = brackets
+main = (rect 600 600 |> filled Color.lightCharcoal)
+       :: brackets
      |> collage 600 600
