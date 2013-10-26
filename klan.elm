@@ -1,4 +1,5 @@
 import Color
+import Either (Either,Left,Right)
 
 -- A 'brack' is a name of either a player or a team,
 -- associated with a score
@@ -12,56 +13,69 @@ brackName b = case b of
 data Brack = Player Brack_desc
            | Team Brack_desc
 
+player string = Player (Brack_desc 0 string)
+
 -- A match is a matchup between two bracks
 type Match = { top:Brack, bottom:Brack }
 
--- Rendering
-txt = text . Text.toText
+-- The full bracket is a tree
+data Bracket = Empty
+             | MatchNode (Either Match Brack) Bracket Bracket
 
-box : (Int,Int) -> Form
-box s = rect (toFloat (fst s)) (toFloat (snd s))
-        |> outlined (solid Color.black)
+brackText : String -> Element
+brackText name = text (Text.toText name)
 
-centerline w = traced (dashed Color.black)
-  <| path [(-(w/2),0),(w/2,0)]
-
-toFloatBoth (a,b) = (toFloat a, toFloat b)
-
-playerText : String -> Element
-playerText name = txt name
-
-bracketTextBox : Int -> Int -> Brack -> Element
-bracketTextBox w h name = container w (h `div` 2)
+renderBrack : Int -> Int -> Brack -> Form
+renderBrack w h name = container w (h `div` 2)
                                   midLeft
-                                  (playerText (brackName name))
+                                  (brackText (brackName name))
+                       |> toForm
 
-matchBox : Int -> Element -> Form
-matchBox s e = group ((rect 200 50 |> filled Color.green)
-                      :: (toForm e :: [box (200,50), centerline 200]))
-               |> move(-170,toFloat (-60*s))
+renderBracket : Bracket -> Form
+renderBracket b =
+        let render : Bracket -> Form -> (Int,Int,Form)
+            render b f =
+              case b of
+                Empty -> (0,0,f)
+                MatchNode match bl br ->
+                  let (w1,h1,left) = render bl f
+                      (w2,h2,right) = render br f
+                  in
+                  (240,
+                   h1 + h2 + 30,
+                  group
+                     [rect 200 50 |> filled Color.black,
+                      left  |> move (toFloat -w1,toFloat -h1),
+                      right |> move (toFloat -w1, toFloat h2)])
+            (_,_,r) = render b (rect 0 0 |> filled Color.white)
+        in r
 
-brackColumn : [Match] -> [Form]
-brackColumn matches =
-  let brack = (bracketTextBox 200 50)
-  in
-    map (\({top,bottom},i) ->
-          matchBox i (flow down [brack top,
-                                 brack bottom]))
-        (zip matches [0..(length matches)])
+mat = (MatchNode
+          (Left (Match
+            (player "Player 1")
+            (player "Player 2")))
+         (MatchNode
+            (Left (Match
+              (player "Player 1")
+              (player "Player 2")))
+            Empty Empty)
+         (MatchNode
+            (Left (Match
+              (player "Player 1")
+              (player "Player 2")))
+            Empty Empty))
 
--- Temporary construction of matches
+b = MatchNode (Right (player "Unknown"))
+         (MatchNode
+            (Left (Match
+              (player "Player 1")
+              (player "Player 2")))
+            mat mat)
+         (MatchNode
+            (Left (Match
+              (player "Player 1")
+              (player "Player 2")))
+            mat mat)
 
-toMatch : String -> String -> Match
-toMatch t b = Match ((Player . Brack_desc 0) t)
-                    ((Player . Brack_desc 0) b)
-
-brackets : [Form]
-brackets = brackColumn <| [toMatch "Player 1" "Player 2",
-                           toMatch "Player 3" "Player 4",
-                           toMatch "Player 5" "Player 6",
-                           toMatch "Player 7" "Player 8"]
-          
-
-main = (rect 600 600 |> filled Color.lightCharcoal)
-       :: brackets
-     |> collage 600 600
+main = [move (200, 0) (renderBracket b) |> scale 0.5] |>
+       collage 600 600
