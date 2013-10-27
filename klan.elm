@@ -19,8 +19,8 @@ player string = Player (Brack_desc 0 string)
 type Match = { top:Brack, bottom:Brack }
 
 -- The full bracket is a tree
-data Bracket = Empty
-             | MatchNode (Either Match Brack) Bracket Bracket
+data Bracket d = Empty
+               | MatchNode d (Bracket d) (Bracket d)
 
 brackText : String -> Element
 brackText name = text (Text.toText name)
@@ -31,25 +31,25 @@ renderBrack w h name = container w (h `div` 2)
                                   (brackText (brackName name))
                        |> toForm
 
-renderBracket : Bracket -> Form
+renderBracket : Bracket (Either Match Brack) -> Form
 renderBracket b =
-        let render : Bracket -> Form -> (Int,Int,Form)
+        let render : Bracket (Either Match Brack) -> Form -> (Int,Form)
             render b f =
               case b of
-                Empty -> (0,0,f)
+                Empty -> (0,f)
                 MatchNode match bl br ->
-                  let (w1,h1,left) = render bl f
-                      (w2,h2,right) = render br f
+                  let (h1,left) = render bl f
+                      (h2,right) = render br f
                   in
-                  (240,
-                   h1 + h2 + 30,
+                  (h1 + h2 + 30,
                   group
                      [rect 200 50 |> filled Color.black,
-                      left  |> move (toFloat -w1,toFloat -h1),
-                      right |> move (toFloat -w1, toFloat h2)])
-            (_,_,r) = render b (rect 0 0 |> filled Color.white)
+                      left  |> move (toFloat -240,toFloat -h1),
+                      right |> move (toFloat -240, toFloat h2)])
+            (_,r) = render b (rect 0 0 |> filled Color.white)
         in r
 
+mat : Bracket (Either Match Brack)
 mat = (MatchNode
           (Left (Match
             (player "Player 1")
