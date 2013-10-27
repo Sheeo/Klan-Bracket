@@ -19,34 +19,33 @@ player string = Player (Brack_desc 0 string)
 type Match = { top:Brack, bottom:Brack }
 
 -- The full bracket is a tree
-data Bracket d = Empty
-               | MatchNode d (Bracket d) (Bracket d)
+data Bracket a = Empty
+               | MatchNode a (Bracket a) (Bracket a)
 
-brackText : String -> Element
-brackText name = text (Text.toText name)
-
-renderBrack : Int -> Int -> Brack -> Form
-renderBrack w h name = container w (h `div` 2)
-                                  midLeft
-                                  (brackText (brackName name))
-                       |> toForm
-
-renderBracket : Bracket (Either Match Brack) -> Form
-renderBracket b =
-        let render : Bracket (Either Match Brack) -> Form -> (Int,Form)
+renderBracket : Bracket (Either Match Brack) -> ((Either Match Brack) -> Form) -> Form
+-- Above type is intentionally specific to avoid unification bug
+renderBracket b draw =
+        let render : Bracket (Either Match Brack) -> Form -> (Int, Form)
             render b f =
               case b of
                 Empty -> (0,f)
                 MatchNode match bl br ->
-                  let (h1,left) = render bl f
+                  let (h1,left)  = render bl f
                       (h2,right) = render br f
                   in
                   (h1 + h2 + 30,
                   group
-                     [rect 200 50 |> filled Color.black,
-                      left  |> move (toFloat -240,toFloat -h1),
-                      right |> move (toFloat -240, toFloat h2)])
-            (_,r) = render b (rect 0 0 |> filled Color.white)
+                     [draw match,
+                      left  |> move (toFloat -240, toFloat -h1),
+                      right |> move (toFloat -240, toFloat  h2),
+                      (traced defaultLine (path [(-140, toFloat -h1),
+                                                 (-90,0),
+                                                 (0,0)])),
+                      (traced defaultLine (path [(-140, toFloat h2),
+                                                 (-90,0),
+                                                 (0,0)]))
+                      ])
+            (_,r) = render b (spacer 0 0 |> toForm)
         in r
 
 mat : Bracket (Either Match Brack)
@@ -65,6 +64,7 @@ mat = (MatchNode
               (player "Player 2")))
             Empty Empty))
 
+b : Bracket (Either Match Brack)
 b = MatchNode (Right (player "Unknown"))
          (MatchNode
             (Left (Match
@@ -77,5 +77,10 @@ b = MatchNode (Right (player "Unknown"))
               (player "Player 2")))
             mat mat)
 
-main = [move (200, 0) (renderBracket b) |> scale 0.5] |>
+alwaysRect : Either a b -> Form
+alwaysRect m = case m of
+                Left m -> rect 200 40 |> filled Color.black
+                Right b -> rect 200 20 |> filled Color.black
+
+main = [move (200, 0) (renderBracket b alwaysRect) |> scale 0.5] |>
        collage 600 600
