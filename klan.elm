@@ -19,68 +19,82 @@ player string = Player (Brack_desc 0 string)
 type Match = { top:Brack, bottom:Brack }
 
 -- The full bracket is a tree
-data Bracket a = Empty
-               | MatchNode a (Bracket a) (Bracket a)
+data Bracket a = Leaf a
+               | InnerNode a (Bracket a) (Bracket a)
 
-renderBracket : Bracket (Either Match Brack) -> ((Either Match Brack) -> Form) -> Form
+renderBracket : Bracket (Either Match Brack)   ->
+                ((Either Match Brack) -> (Int, Int, Form)) ->
+                Form
 -- Above type is intentionally specific to avoid unification bug
 renderBracket b draw =
-        let render : Bracket (Either Match Brack) -> Form -> (Int, Form)
-            render b f =
+        let render : Bracket (Either Match Brack) -> (Int, Int, Form)
+            render b =
               case b of
-                Empty -> (0,f)
-                MatchNode match bl br ->
-                  let (h1,left)  = render bl f
-                      (h2,right) = render br f
+                Leaf match ->
+                  let (w,h,drawn) = draw match in
+                  (w,h,drawn)
+                InnerNode match bl br ->
+                  let (_,h1,left)  = render bl
+                      (_,h2,right) = render br
+                      (w,_, drawn) = draw match
                   in
-                  (h1 + h2 + 30,
+                  (w,
+                  h1 + h2 + 30,
                   group
-                     [draw match,
-                      left  |> move (toFloat -240, toFloat -h1),
-                      right |> move (toFloat -240, toFloat  h2),
-                      (traced defaultLine (path [(-140, toFloat -h1),
-                                                 (-90,0),
-                                                 (0,0)])),
-                      (traced defaultLine (path [(-140, toFloat h2),
-                                                 (-90,0),
-                                                 (0,0)]))
+                     [drawn,
+                      left  |> move (toFloat (-w - 50), toFloat -h1),
+                      right |> move (toFloat (-w - 50), toFloat  h2),
+                      (traced (dashed Color.black)
+                              (path [(toFloat -w/2 - 50, toFloat -h1),
+                                     (toFloat -w/2 - 25, toFloat -h1),
+                                     (toFloat -w/2 - 25,0)])),
+                      (traced (dashed Color.black)
+                              (path [(toFloat -w/2 - 50, toFloat h2),
+                                     (toFloat -w/2 - 25, toFloat h2),
+                                     (toFloat -w/2 - 25,0),
+                                     (toFloat -w/2,0)]))
                       ])
-            (_,r) = render b (spacer 0 0 |> toForm)
+            (_,_,r) = render b
         in r
 
-mat : Bracket (Either Match Brack)
-mat = (MatchNode
+mat = (InnerNode
           (Left (Match
             (player "Player 1")
             (player "Player 2")))
-         (MatchNode
+         (Leaf
             (Left (Match
               (player "Player 1")
-              (player "Player 2")))
-            Empty Empty)
-         (MatchNode
+              (player "Player 2"))))
+         (Leaf
             (Left (Match
               (player "Player 1")
-              (player "Player 2")))
-            Empty Empty))
+              (player "Player 2")))))
 
-b : Bracket (Either Match Brack)
-b = MatchNode (Right (player "Unknown"))
-         (MatchNode
+b = InnerNode (Right (player "Unknown"))
+         (InnerNode
             (Left (Match
               (player "Player 1")
               (player "Player 2")))
             mat mat)
-         (MatchNode
-            (Left (Match
-              (player "Player 1")
-              (player "Player 2")))
+         (InnerNode
+            (Right (player "Test"))
             mat mat)
 
-alwaysRect : Either a b -> Form
+renderBrack : Brack -> Form
+renderBrack b = group [rect 200 20 |> filled white,
+                       toForm (plainText (brackName b)) ]
+
+renderMatch : Match -> Form
+renderMatch m = group [renderBrack m.top |> moveY 10,
+                       renderBrack m.bottom |> moveY -10]
+
+alwaysRect : Either Match Brack -> (Int, Int, Form)
 alwaysRect m = case m of
-                Left m -> rect 200 40 |> filled Color.black
-                Right b -> rect 200 20 |> filled Color.black
+                Left  m -> (200, 40,
+                            renderMatch m)
+                Right b -> (200, 40,
+                            renderBrack b)
 
-main = [move (200, 0) (renderBracket b alwaysRect) |> scale 0.5] |>
-       collage 600 600
+main = [rect 800 800 |> filled blue,
+        renderBracket b alwaysRect |> moveX 200 |> scale 0.7]
+       |> collage 800 800
