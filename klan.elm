@@ -1,6 +1,7 @@
 import Color
 import Bracket (InnerNode,Leaf,renderBracket)
 import Either (Either,Left,Right)
+import Window
 
 player string = Player (Brack_desc 0 string)
 
@@ -57,11 +58,13 @@ renderBrack b = let color = case (brackScore b) of
                        toForm (plainText (show (brackScore b))) |> moveX 80]
 
 renderMatch : Match -> Form
-renderMatch m = group [renderBrack m.top |> moveY 10,
-                       renderBrack m.bottom |> moveY -10]
+renderMatch m = group [renderBrack m.top
+                        |> moveY 10,
+                       renderBrack m.bottom
+                        |> moveY -10]
 
-alwaysRect : Either Match Brack -> (Int, Int, Form)
-alwaysRect m = case m of
+renderMatchBrack : Either Match Brack -> (Int, Int, Form)
+renderMatchBrack m = case m of
                 Left  m -> (200, 40,
                             group [rect 200 40 |> outlined (solid black),
                                    renderMatch m,
@@ -69,10 +72,16 @@ alwaysRect m = case m of
                 Right b -> (200, 20,
                             renderBrack b)
 
-
-
-(bwidth, bheight, bracket) = renderBracket b alwaysRect
-main = [rect 800 800 |> filled blue,
+render : (Int,Int) -> Element
+render input =
+      let (bwidth,bheight,bracket) = renderBracket b renderMatchBrack
+          (w,h) = (fst input, snd input)
+      in
+      [rect (toFloat w) (toFloat h) |> filled white,
+        container w h midTop (image 400 100 "Banner4.png")
+        |> toForm,
         bracket
         |> moveX (toFloat bwidth/2 + 50)]
-       |> collage 800 800
+       |> collage w h
+
+main = lift render Window.dimensions
