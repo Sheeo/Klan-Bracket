@@ -1,33 +1,10 @@
 module Bracket where
 
--- A 'brack' is a name of either a player or a team,
--- associated with a score
-type Brack_desc = { score:Int,
-                    name:String }
-
-brackName : Brack -> String
-brackName b = case b of
-                  Player d -> .name d
-                  Team d -> .name d
-
-brackScore : Brack -> Int
-brackScore b = case b of
-                  Player p -> .score p
-                  Team t -> .score t
-
-data Brack = Player Brack_desc
-           | Team Brack_desc
-
--- A match is a matchup between two bracks
-type Match = { top:Brack, bottom:Brack }
-
--- The full bracket is a tree
+-- Tree bracket structure
 data Bracket a = Leaf a
                | InnerNode a (Bracket a) (Bracket a)
 
-renderBracket : Bracket a ->
-                (a -> (Int, Int, Form)) ->
-                (Int, Int, Form)
+renderBracket : Bracket a -> (a -> (Int, Int, Form)) -> (Int, Int, Form)
 renderBracket b draw =
         let render b =
               case b of
