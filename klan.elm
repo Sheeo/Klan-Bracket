@@ -2,39 +2,29 @@ import Color
 import Bracket (Bracket,InnerNode,Leaf,renderBracket,mapBracket)
 import Either (Either,Left,Right)
 import Window
+import Maybe
 import Graphics.Input (hoverable)
-
-player string = Player (Brack_desc 0 string)
-playerWithScore name score = Player (Brack_desc score name)
 
 -- A 'brack' is a name of either a player or a team,
 -- associated with a score
-type Brack_desc = { score:Int,
-                    name:String }
+data BrackType = Player
+               | Team
 
-brackName : Brack -> String
-brackName b = case b of
-                  Player d -> .name d
-                  Team d -> .name d
-
-brackScore : Brack -> Int
-brackScore b = case b of
-                  Player p -> .score p
-                  Team t -> .score t
-
-resetBrackScore : Brack -> Brack
-resetBrackScore b = case b of
-                  Player p -> Player { p | score <- 0}
-                  Team   t -> Team { t | score <- 0}
-
-data Brack = Player Brack_desc
-           | Team Brack_desc
+type Brack = { score:    Int,
+               name:     String,
+               selected: Bool,
+               typ:      BrackType}
 
 data Match = Empty
            | One Brack
            | Two Brack Brack
 
-brackEq b1 b2 = brackName b1 == brackName b2
+player name = Brack 0 name False Player
+team name   = Brack 0 name False Team
+teamWithScore name score   = Brack score name False Team
+playerWithScore name score = Brack score name False Player
+
+brackEq b1 b2 = .name b1 == .name b2
 
 matchEq : Match -> Match -> Bool
 matchEq m1 m2 = case (m1,m2) of
@@ -47,17 +37,21 @@ maxScore : Match -> Maybe Brack
 maxScore m = case m of
               Empty -> Nothing
               One b -> Just b
-              Two b1 b2 -> if | brackScore b1 > brackScore b2 -> Just b1
-                              | brackScore b2 > brackScore b1 -> Just b2
+              Two b1 b2 -> if | .score b1 > .score b2 -> Just b1
+                              | .score b2 > .score b1 -> Just b2
                               | otherwise -> Nothing
 
 renderBrack : Brack -> Element
 renderBrack b = let contain = container 200 20
-                    (elm,signal) = hoverable (layers [ plainText (brackName b)
-                                   |> contain midLeft,
-                                   plainText (show (brackScore b))
-                                   |> contain midRight])
-                in elm
+                in
+                    layers
+                          (Maybe.cons (if .selected b
+                                       then Just (spacer 200 20 |> color red)
+                                       else Nothing)
+                          [ plainText (.name b)
+                             |> contain midLeft,
+                             plainText (show (.score b))
+                             |> contain midRight])
 
 renderMatch : Match -> (Int, Int, Form)
 renderMatch m =
@@ -126,7 +120,7 @@ winners b1 b2 = let winner : Bracket Match -> Maybe Brack
                         InnerNode m b1 b2 -> maxScore m
                 in
                 case ((winner b1), (winner b2)) of
-                  (Just w1, Just w2) -> Two (resetBrackScore w2) (resetBrackScore w1)
+                  (Just w1, Just w2) -> Two {w2 | score <- 0} {w1 | score <- 0}
                   _ -> Empty
 
 
@@ -150,7 +144,7 @@ updateScore m b = mapBracket (\m' -> if matchEq m m' then m
 
 
 players = map (\i -> "Player " ++ (show i)) [1..12]
-bracket = fromList players
+initialBracket = fromList players
           |> updateScore (Two (player "Player 7") (playerWithScore "Player 8" 2))
           |> updateScore (Two (playerWithScore "Player 5" 2) (player "Player 6"))
           |> updateScore (Two (playerWithScore "Player 1" 2) (player "Player 2"))
@@ -162,7 +156,7 @@ bracket = fromList players
 
 render : (Int,Int) -> Element
 render input =
-      let (bw,bh,brkt) = renderBracket bracket renderMatch
+      let (bw,bh,brkt) = renderBracket initialBracket renderMatch
           (w,h) = (fst input, snd input)
           br = map (moveX (toFloat bw/2)) brkt
       in
