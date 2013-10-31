@@ -6,47 +6,6 @@ import Maybe
 import Keyboard
 import Graphics.Input (hoverable)
 
--- A 'brack' is a name of either a player or a team,
--- associated with a score
-data BrackType = Player
-               | Team
-
-type Brack = { score:    Int,
-               name:     String,
-               selected: Bool,
-               typ:      BrackType}
-
-data Match = Empty
-           | One Brack
-           | Two Brack Brack
-
-anyMatch : (Brack -> Bool) -> Match -> Bool
-anyMatch fun m = case m of
-                  Empty -> False
-                  One b -> fun b
-                  Two b1 b2 -> fun b1 || fun b2
-
-player name = Brack 0 name False Player
-team name   = Brack 0 name False Team
-teamWithScore name score   = Brack score name False Team
-playerWithScore name score = Brack score name False Player
-
-brackEq b1 b2 = .name b1 == .name b2
-
-matchEq : Match -> Match -> Bool
-matchEq m1 m2 = case (m1,m2) of
-                  (Empty,Empty) -> True
-                  (One b1,One b2) -> brackEq b1 b2
-                  (Two b1 b2,Two b3 b4) -> brackEq b1 b3 && brackEq b2 b4
-                  _ -> False
-
-maxScore : Match -> Maybe Brack
-maxScore m = case m of
-              Empty -> Nothing
-              One b -> Just b
-              Two b1 b2 -> if | .score b1 > .score b2 -> Just b1
-                              | .score b2 > .score b1 -> Just b2
-                              | otherwise -> Nothing
 
 renderBrack : Brack -> Element
 renderBrack b = let contain = container 200 20
@@ -160,19 +119,7 @@ selectFirst b = case b of
 
 
 moveSelected : Direction -> Bracket Match -> Bracket Match
-moveSelected d b = case d of
-                    up -> case b of
-                            Leaf m -> case m of
-                                        Empty -> b
-                                        One _ -> b
-                                        Two b1 b2 ->
-                                          if .selected b1
-                                          then Leaf (Two
-                                                {b1 | selected <- False}
-                                                {b2 | selected <- True})
-                                          else b
-                            _ -> b
-                    _ -> b
+moveSelected d b = b
 
 players = map (\i -> "Player " ++ (show i)) [1..16]
 initialBracket = fromList players
