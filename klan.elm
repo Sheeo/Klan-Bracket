@@ -51,7 +51,12 @@ b = InnerNode (Right (player "Unknown"))
             mat mat)
 
 renderBrack : Brack -> Element
-renderBrack b = plainText (brackName b)
+renderBrack b = let contain = container 200 20
+                in
+                layers [ plainText (brackName b)
+                         |> contain midLeft,
+                         plainText (show (brackScore b))
+                         |> contain midRight]
 
 renderMatch : Match -> Form
 renderMatch m = container 200 20 midLeft (renderBrack m.top)
@@ -67,13 +72,14 @@ renderMatchBrack m = case m of
                                    renderMatch m,
                                    traced (solid black) [(-100,0),(100,0)]])
                 Right b -> (200, 20,
-                            toForm <| renderBrack b)
+                            group [rect 200 20 |> outlined (solid black),
+                                   toForm <| renderBrack b])
 
 render : (Int,Int) -> Element
 render input =
       let (bw,bh,brkt) = renderBracket b renderMatchBrack
           (w,h) = (fst input, snd input)
-          br = map (moveX (toFloat bw/2 + 50)) brkt
+          br = map (moveX (toFloat bw/2)) brkt
       in
       ([rect (toFloat w) (toFloat h) |> filled white,
         container w h midTop (image 400 100 "Banner4.png") |> toForm]
