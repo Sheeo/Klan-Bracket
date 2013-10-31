@@ -1,8 +1,9 @@
 import Color
-import Bracket (Bracket,InnerNode,Leaf,renderBracket,mapBracket)
+import Bracket (Bracket,InnerNode,Leaf,renderBracket,mapBracket,anyBracket)
 import Either (Either,Left,Right)
 import Window
 import Maybe
+import Keyboard
 import Graphics.Input (hoverable)
 
 -- A 'brack' is a name of either a player or a team,
@@ -18,6 +19,12 @@ type Brack = { score:    Int,
 data Match = Empty
            | One Brack
            | Two Brack Brack
+
+anyMatch : (Brack -> Bool) -> Match -> Bool
+anyMatch fun m = case m of
+                  Empty -> False
+                  One b -> fun b
+                  Two b1 b2 -> fun b1 || fun b2
 
 player name = Brack 0 name False Player
 team name   = Brack 0 name False Team
@@ -142,21 +149,52 @@ updateScore m b = mapBracket (\m' -> if matchEq m m' then m
                                      else m')
                               b
 
+-- Selection updates
+selectFirst : Bracket Match -> Bracket Match
+selectFirst b = case b of
+                  Leaf m -> case m of
+                              Empty -> Leaf Empty
+                              One b -> Leaf (One {b | selected <- True})
+                              Two b1 b2 -> Leaf (Two {b1 | selected <- True} b2)
+                  InnerNode m b1 b2 -> InnerNode m b1 (selectFirst b2)
 
-players = map (\i -> "Player " ++ (show i)) [1..12]
+
+moveSelected : Direction -> Bracket Match -> Bracket Match
+moveSelected d b = case d of
+                    up -> case b of
+                            Leaf m -> case m of
+                                        Empty -> b
+                                        One _ -> b
+                                        Two b1 b2 ->
+                                          if .selected b1
+                                          then Leaf (Two
+                                                {b1 | selected <- False}
+                                                {b2 | selected <- True})
+                                          else b
+                            _ -> b
+                    _ -> b
+
+players = map (\i -> "Player " ++ (show i)) [1..16]
 initialBracket = fromList players
-          |> updateScore (Two (player "Player 7") (playerWithScore "Player 8" 2))
-          |> updateScore (Two (playerWithScore "Player 5" 2) (player "Player 6"))
-          |> updateScore (Two (playerWithScore "Player 1" 2) (player "Player 2"))
-          |> updateScore (Two (playerWithScore "Player 3" 2) (player "Player 4"))
-          |> updateBracket
-          |> updateScore (Two (playerWithScore "Player 1" 2) (player "Player 3"))
-          |> updateScore (Two (playerWithScore "Player 5" 2) (player "Player 8"))
-          |> updateBracket
 
-render : (Int,Int) -> Element
-render input =
-      let (bw,bh,brkt) = renderBracket initialBracket renderMatch
+type Input = { dir:{x:Int,y:Int}, space:Bool }
+input = Input <~ Keyboard.arrows ~ Keyboard.space
+
+stepBracket : Input -> Bracket Match -> Bracket Match
+stepBracket inp b = let anySelected =
+                          anyBracket (\m -> anyMatch .selected m) b
+                    in
+                    if | anySelected == False -> selectFirst b
+                       | inp.dir.x == 1 -> moveSelected right b
+                       | inp.dir.x == -1 -> moveSelected left b
+                       | inp.dir.y == 1 -> moveSelected up b
+                       | inp.dir.y == -1 -> moveSelected down b
+
+bracketState = foldp stepBracket initialBracket input
+
+render : (Int,Int) -> Bracket Match -> Element
+render input bracket =
+      let (bw,bh,brkt) = renderBracket bracket renderMatch
           (w,h) = (fst input, snd input)
           br = map (moveX (toFloat bw/2)) brkt
       in
@@ -165,4 +203,4 @@ render input =
       ++ [group br])
        |> collage w h
 
-main = lift render Window.dimensions
+main = lift2 render Window.dimensions bracketState

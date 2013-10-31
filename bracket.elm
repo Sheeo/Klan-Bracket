@@ -10,6 +10,11 @@ mapBracket fun b = case b of
   Leaf a -> Leaf (fun a)
   InnerNode a b1 b2 -> InnerNode (fun a) (mapBracket fun b1) (mapBracket fun b2)
 
+anyBracket : (a -> Bool) -> Bracket a -> Bool
+anyBracket fun b = case b of
+                     Leaf a -> (fun a)
+                     InnerNode a b1 b2 -> (fun a) || anyBracket fun b1 || anyBracket fun b2
+
 renderBracket : Bracket a -> (a -> (Int, Int, Form)) -> (Int, Int, [Form])
 renderBracket b draw =
   case b of
