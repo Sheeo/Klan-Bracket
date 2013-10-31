@@ -4,6 +4,7 @@ import Either (Either,Left,Right)
 import Window
 
 player string = Player (Brack_desc 0 string)
+playerWithScore name score = Player (Brack_desc score name)
 
 -- A 'brack' is a name of either a player or a team,
 -- associated with a score
@@ -27,6 +28,14 @@ data Match = Empty
            | One Brack
            | Two Brack Brack
 
+maxScore : Match -> Maybe Brack
+maxScore m = case m of
+              Empty -> Nothing
+              One b -> Just b
+              Two b1 b2 -> if | brackScore b1 > brackScore b2 -> Just b1
+                              | brackScore b2 > brackScore b1 -> Just b2
+                              | otherwise -> Nothing
+
 renderBrack : Brack -> Element
 renderBrack b = let contain = container 200 20
                 in
@@ -48,6 +57,7 @@ renderMatch m =
                           |> flow down
                           |> toForm)
 
+-- Build an initial bracket from a list of names
 fromList : [String] -> Bracket Match
 fromList players =
   let minDepth : Bracket Match -> Int
@@ -80,7 +90,7 @@ fromList players =
         case b of
           Leaf m -> case m of
                       Empty -> Leaf (One (player p))
-                      One p1 -> Leaf (Two p1 (player p))
+                      One p1 -> Leaf (Two p1 (playerWithScore p 2))
                       Two _ _ -> InnerNode Empty (Leaf (One (player p))) b
           InnerNode m b1 b2 ->
                     if | hasFreeSpot b1 -> InnerNode m (consBracket p b1) b2
@@ -93,13 +103,37 @@ fromList players =
           p1 :: ps' -> build ps' (consBracket p1 b)
   in build players (Leaf Empty)
 
-players = map (\i -> "Player " ++ (show i)) [1..16]
+winners : Bracket Match -> Bracket Match -> Match
+winners b1 b2 = let winner : Bracket Match -> Maybe Brack
+                    winner b =
+                      case b of
+                        Leaf m -> maxScore m
+                        InnerNode m b1 b2 -> maxScore m
+                in
+                case ((winner b1), (winner b2)) of
+                  (Just w1, Just w2) -> Two w1 w2
+                  _ -> Empty
 
-b = fromList players
+
+-- Update a bracket with matches determined from nonempty nodes
+updateBracket : Bracket Match -> Bracket Match
+updateBracket b = case b of
+                    Leaf m -> b
+                    InnerNode m b1 b2 ->
+                      let b1' = updateBracket b1
+                          b2' = updateBracket b2
+                      in
+                      case m of
+                        Empty -> InnerNode (winners b1' b2') b1' b2'
+                        _ -> b
+
+players = map (\i -> "Player " ++ (show i)) [1..8]
+
+bracket = updateBracket (fromList players)
 
 render : (Int,Int) -> Element
 render input =
-      let (bw,bh,brkt) = renderBracket b renderMatch
+      let (bw,bh,brkt) = renderBracket bracket renderMatch
           (w,h) = (fst input, snd input)
           br = map (moveX (toFloat bw/2)) brkt
       in
