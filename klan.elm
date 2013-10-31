@@ -21,6 +21,11 @@ brackScore b = case b of
                   Player p -> .score p
                   Team t -> .score t
 
+resetBrackScore : Brack -> Brack
+resetBrackScore b = case b of
+                  Player p -> Player { p | score <- 0}
+                  Team   t -> Team { t | score <- 0}
+
 data Brack = Player Brack_desc
            | Team Brack_desc
 
@@ -120,7 +125,7 @@ winners b1 b2 = let winner : Bracket Match -> Maybe Brack
                         InnerNode m b1 b2 -> maxScore m
                 in
                 case ((winner b1), (winner b2)) of
-                  (Just w1, Just w2) -> Two w1 w2
+                  (Just w1, Just w2) -> Two (resetBrackScore w2) (resetBrackScore w1)
                   _ -> Empty
 
 
@@ -143,11 +148,16 @@ updateScore m b = mapBracket (\m' -> if matchEq m m' then m
                               b
 
 
-players = map (\i -> "Player " ++ (show i)) [1..8]
+players = map (\i -> "Player " ++ (show i)) [1..12]
 
 bracket = fromList players
           |> updateScore (Two (player "Player 7") (playerWithScore "Player 8" 2))
           |> updateScore (Two (playerWithScore "Player 5" 2) (player "Player 6"))
+          |> updateScore (Two (playerWithScore "Player 1" 2) (player "Player 2"))
+          |> updateScore (Two (playerWithScore "Player 3" 2) (player "Player 4"))
+          |> updateBracket
+          |> updateScore (Two (playerWithScore "Player 1" 2) (player "Player 3"))
+          |> updateScore (Two (playerWithScore "Player 5" 2) (player "Player 8"))
           |> updateBracket
 
 render : (Int,Int) -> Element
