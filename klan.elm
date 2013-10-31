@@ -25,31 +25,6 @@ data Brack = Player Brack_desc
 
 type Match = { top:Brack, bottom:Brack }
 
-mat = (InnerNode
-          (Left (Match
-            (player "Player 1")
-            (player "Player 2")))
-         (Leaf
-            (Left (Match
-              (player "Player 1")
-              (player "Player 2"))))
-         (Leaf
-            (Left (Match
-              (player "Player 1")
-              (player "Player 2")))))
-
-b = InnerNode (Right (player "Unknown"))
-         (InnerNode
-            (Left (Match
-              (player "Player 1")
-              (player "Player 2")))
-            mat mat)
-         (InnerNode
-            (Left (Match
-              (player "Test")
-              (player "P2")))
-            mat mat)
-
 renderBrack : Brack -> Element
 renderBrack b = let contain = container 200 20
                 in
@@ -74,6 +49,8 @@ renderMatchBrack m = case m of
                 Right b -> (200, 20,
                             group [rect 200 20 |> outlined (solid black),
                                    toForm <| renderBrack b])
+
+b = Leaf (Right (player "Test"))
 
 render : (Int,Int) -> Element
 render input =
