@@ -1,5 +1,5 @@
 import Color
-import Bracket (Bracket,InnerNode,Leaf,renderBracket,mapBracket,anyBracket)
+import open Bracket
 import Either (Either,Left,Right)
 import Window
 import Maybe
