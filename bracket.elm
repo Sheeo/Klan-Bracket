@@ -4,6 +4,12 @@ module Bracket where
 data Bracket a = Leaf a
                | InnerNode a (Bracket a) (Bracket a)
 
+-- Map a function over all values in the bracket
+mapBracket : (a -> a) -> Bracket a -> Bracket a
+mapBracket fun b = case b of
+  Leaf a -> Leaf (fun a)
+  InnerNode a b1 b2 -> InnerNode (fun a) (mapBracket fun b1) (mapBracket fun b2)
+
 renderBracket : Bracket a -> (a -> (Int, Int, Form)) -> (Int, Int, [Form])
 renderBracket b draw =
   case b of

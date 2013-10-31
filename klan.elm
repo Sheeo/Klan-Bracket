@@ -1,5 +1,5 @@
 import Color
-import Bracket (Bracket,InnerNode,Leaf,renderBracket)
+import Bracket (Bracket,InnerNode,Leaf,renderBracket,mapBracket)
 import Either (Either,Left,Right)
 import Window
 
@@ -27,6 +27,15 @@ data Brack = Player Brack_desc
 data Match = Empty
            | One Brack
            | Two Brack Brack
+
+brackEq b1 b2 = brackName b1 == brackName b2
+
+matchEq : Match -> Match -> Bool
+matchEq m1 m2 = case (m1,m2) of
+                  (Empty,Empty) -> True
+                  (One b1,One b2) -> brackEq b1 b2
+                  (Two b1 b2,Two b3 b4) -> brackEq b1 b3 && brackEq b2 b4
+                  _ -> False
 
 maxScore : Match -> Maybe Brack
 maxScore m = case m of
@@ -90,7 +99,7 @@ fromList players =
         case b of
           Leaf m -> case m of
                       Empty -> Leaf (One (player p))
-                      One p1 -> Leaf (Two p1 (playerWithScore p 2))
+                      One p1 -> Leaf (Two p1 (player p))
                       Two _ _ -> InnerNode Empty (Leaf (One (player p))) b
           InnerNode m b1 b2 ->
                     if | hasFreeSpot b1 -> InnerNode m (consBracket p b1) b2
@@ -127,9 +136,19 @@ updateBracket b = case b of
                         Empty -> InnerNode (winners b1' b2') b1' b2'
                         _ -> b
 
+-- Given a match, update it in the bracket
+updateScore : Match -> Bracket Match -> Bracket Match
+updateScore m b = mapBracket (\m' -> if matchEq m m' then m
+                                     else m')
+                              b
+
+
 players = map (\i -> "Player " ++ (show i)) [1..8]
 
-bracket = updateBracket (fromList players)
+bracket = fromList players
+          |> updateScore (Two (player "Player 7") (playerWithScore "Player 8" 2))
+          |> updateScore (Two (playerWithScore "Player 5" 2) (player "Player 6"))
+          |> updateBracket
 
 render : (Int,Int) -> Element
 render input =
