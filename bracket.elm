@@ -17,16 +17,17 @@ renderBracket b draw =
       let (w,h,drawn) = draw match in
       (w,h,[drawn])
     InnerNode match bl br ->
-      let (w1,h1,left)  = renderBracket bl draw
+      let arrstyle      = {defaultLine | width <- 5, join <- Smooth}
+          (w1,h1,left)  = renderBracket bl draw
           (w2,h2,right) = renderBracket br draw
           (w,h, drawn)  = draw match
           left'         = map (move (toFloat (-w - 50), toFloat -h1)) left
           right'        = map (move (toFloat (-w - 50), toFloat h2)) right
-          tarrw         = traced (dashed black)
+          tarrw         = traced arrstyle
                            (path [(toFloat -w/2 - 50, toFloat -h1),
                                  (toFloat -w/2 - 25, toFloat -h1),
                                  (toFloat -w/2 - 25,0)])
-          barrw         = traced (dashed black)
+          barrw         = traced arrstyle
                            (path [(toFloat -w/2 - 50, toFloat h2),
                                  (toFloat -w/2 - 25, toFloat h2),
                                  (toFloat -w/2 - 25,0),

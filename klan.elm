@@ -2,6 +2,7 @@ import Color
 import Bracket (Bracket,InnerNode,Leaf,renderBracket,mapBracket)
 import Either (Either,Left,Right)
 import Window
+import Graphics.Input (hoverable)
 
 player string = Player (Brack_desc 0 string)
 playerWithScore name score = Player (Brack_desc score name)
@@ -52,11 +53,11 @@ maxScore m = case m of
 
 renderBrack : Brack -> Element
 renderBrack b = let contain = container 200 20
-                in
-                layers [ plainText (brackName b)
-                         |> contain midLeft,
-                         plainText (show (brackScore b))
-                         |> contain midRight]
+                    (elm,signal) = hoverable (layers [ plainText (brackName b)
+                                   |> contain midLeft,
+                                   plainText (show (brackScore b))
+                                   |> contain midRight])
+                in elm
 
 renderMatch : Match -> (Int, Int, Form)
 renderMatch m =
@@ -149,7 +150,6 @@ updateScore m b = mapBracket (\m' -> if matchEq m m' then m
 
 
 players = map (\i -> "Player " ++ (show i)) [1..12]
-
 bracket = fromList players
           |> updateScore (Two (player "Player 7") (playerWithScore "Player 8" 2))
           |> updateScore (Two (playerWithScore "Player 5" 2) (player "Player 6"))
