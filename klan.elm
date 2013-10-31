@@ -45,23 +45,20 @@ b = InnerNode (Right (player "Unknown"))
               (player "Player 2")))
             mat mat)
          (InnerNode
-            (Right (player "Test"))
+            (Left (Match
+              (player "Test")
+              (player "P2")))
             mat mat)
 
-renderBrack : Brack -> Form
-renderBrack b = let color = case (brackScore b) of
-                            0 -> white
-                            _ -> green
-                in
-                group [rect 200 20 |> filled white,
-                       toForm (plainText (brackName b)) |> moveX -65,
-                       toForm (plainText (show (brackScore b))) |> moveX 80]
+renderBrack : Brack -> Element
+renderBrack b = plainText (brackName b)
 
 renderMatch : Match -> Form
-renderMatch m = group [renderBrack m.top
-                        |> moveY 10,
-                       renderBrack m.bottom
-                        |> moveY -10]
+renderMatch m = container 200 20 midLeft (renderBrack m.top)
+                ::
+                [container 200 20 midLeft (renderBrack m.bottom)]
+                |> flow down
+                |> toForm
 
 renderMatchBrack : Either Match Brack -> (Int, Int, Form)
 renderMatchBrack m = case m of
@@ -70,18 +67,17 @@ renderMatchBrack m = case m of
                                    renderMatch m,
                                    traced (solid black) [(-100,0),(100,0)]])
                 Right b -> (200, 20,
-                            renderBrack b)
+                            toForm <| renderBrack b)
 
 render : (Int,Int) -> Element
 render input =
-      let (bwidth,bheight,bracket) = renderBracket b renderMatchBrack
+      let (bw,bh,brkt) = renderBracket b renderMatchBrack
           (w,h) = (fst input, snd input)
+          br = map (moveX (toFloat bw/2 + 50)) brkt
       in
-      [rect (toFloat w) (toFloat h) |> filled white,
-        container w h midTop (image 400 100 "Banner4.png")
-        |> toForm,
-        bracket
-        |> moveX (toFloat bwidth/2 + 50)]
+      ([rect (toFloat w) (toFloat h) |> filled white,
+        container w h midTop (image 400 100 "Banner4.png") |> toForm]
+      ++ [group br])
        |> collage w h
 
 main = lift render Window.dimensions
