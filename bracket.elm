@@ -1,7 +1,5 @@
 module Bracket where
 
--- A 'brack' is a name of either a player or a team,
--- associated with a score
 data BrackType = Player
                | Team
 
@@ -25,7 +23,8 @@ team name   = Brack 0 name False Team
 teamWithScore name score   = Brack score name False Team
 playerWithScore name score = Brack score name False Player
 
-brackEq b1 b2 = .name b1 == .name b2
+-- Two brackets are deemed equal if their type and names are equal
+brackEq b1 b2 = .name b1 == .name b2 && .typ b1 == .typ b2
 
 matchEq : Match -> Match -> Bool
 matchEq m1 m2 = case (m1,m2) of
