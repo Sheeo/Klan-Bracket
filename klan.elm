@@ -129,9 +129,6 @@ moveSelected d b = b
 players = map (\i -> "Player " ++ (show i)) [1..16]
 initialBracket = fromList players
 
-type Input = { dir:{x:Int,y:Int}, space:Bool }
-input = Input <~ Keyboard.arrows ~ Keyboard.space
-
 stepBracket : Input -> Bracket Match -> Bracket Match
 stepBracket inp b = let anySelected =
                           anyBracket (\m -> anyMatch .selected m) b
@@ -141,7 +138,12 @@ stepBracket inp b = let anySelected =
                        | inp.dir.x == -1 -> moveSelected left b
                        | inp.dir.y == 1 -> moveSelected up b
                        | inp.dir.y == -1 -> moveSelected down b
+                       | otherwise -> b
 
+type Input = { dir:{x:Int,y:Int}, space:Bool }
+input = Input <~ Keyboard.arrows ~ Keyboard.space
+
+bracketState : Signal (Bracket Match)
 bracketState = foldp stepBracket initialBracket input
 
 render : (Int,Int) -> Bracket Match -> Element
