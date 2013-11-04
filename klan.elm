@@ -5,7 +5,7 @@ import Window
 import Maybe
 import Keyboard
 import Graphics.Input (hoverable)
-
+import JavaScript (JSString,fromString)
 
 renderBrack : Brack -> Element
 renderBrack b = let contain = container 200 20
@@ -150,4 +150,11 @@ render input bracket =
       ++ [group br])
        |> collage w h
 
-main = lift2 render Window.dimensions bracketState
+printState : (Int,Int) -> Bracket Match -> JSString
+printState d b = fromString <| "Rendered at " ++ show d
+
+log = lift2 printState Window.dimensions (dropRepeats bracketState)
+foreign export jsevent "log"
+  log : Signal JSString
+
+main = lift2 render Window.dimensions (dropRepeats bracketState)
