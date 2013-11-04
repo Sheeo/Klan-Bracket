@@ -109,6 +109,11 @@ updateScore m b = mapBracket (\m' -> if matchEq m m' then m
                               b
 
 -- Selection updates
+unselect : Bracket Match -> Bracket Match
+unselect b = mapBracket (\m -> case m of Empty -> m
+                                         One b -> One {b | selected <- False}
+                                         Two b1 b2 -> Two {b1 | selected <- False} {b2 | selected <- False}) <| b
+
 selectFirst : Bracket Match -> Bracket Match
 selectFirst b = case b of
                   Leaf m -> case m of
