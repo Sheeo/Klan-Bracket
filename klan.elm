@@ -33,20 +33,20 @@ renderMatch m =
                           |> toForm)
 
 -- Build an initial bracket from a list of names
-fromList : [String] -> Bracket Match
+fromList : [String] -> Bracket
 fromList players =
-  let minDepth : Bracket Match -> Int
+  let minDepth : Bracket -> Int
       minDepth b = case b of
           Leaf _ -> 0
           InnerNode _ b1 b2 -> 1 + min (minDepth b1) (minDepth b2)
-      hasFreeSpot : Bracket Match -> Bool
+      hasFreeSpot : Bracket -> Bool
       hasFreeSpot b = case b of
           Leaf m -> case m of
                       Empty -> True
                       One _ -> True
                       _ -> False
           InnerNode m b1 b2 -> hasFreeSpot b1 || hasFreeSpot b2
-      chooseSide : String -> Bracket Match -> Bracket Match
+      chooseSide : String -> Bracket -> Bracket
       chooseSide p b =
         case b of
           Leaf m -> Leaf m
@@ -60,7 +60,7 @@ fromList players =
                                 InnerNode Empty b1 (consBracket p b2)
                           else
                                 InnerNode Empty (consBracket p b1) b2
-      consBracket : String -> Bracket Match -> Bracket Match
+      consBracket : String -> Bracket -> Bracket
       consBracket p b =
         case b of
           Leaf m -> case m of
@@ -71,15 +71,15 @@ fromList players =
                     if | hasFreeSpot b1 -> InnerNode m (consBracket p b1) b2
                        | hasFreeSpot b2 -> InnerNode m b1 (consBracket p b2)
                        | otherwise -> chooseSide p b
-      build : [String] -> Bracket Match -> Bracket Match
+      build : [String] -> Bracket -> Bracket
       build ps b =
         case ps of
           p1 :: [] -> consBracket p1 b
           p1 :: ps' -> build ps' (consBracket p1 b)
   in build players (Leaf Empty)
 
-winners : Bracket Match -> Bracket Match -> Match
-winners b1 b2 = let winner : Bracket Match -> Maybe Brack
+winners : Bracket -> Bracket -> Match
+winners b1 b2 = let winner : Bracket -> Maybe Brack
                     winner b =
                       case b of
                         Leaf m -> maxScore m
@@ -91,7 +91,7 @@ winners b1 b2 = let winner : Bracket Match -> Maybe Brack
 
 
 -- Update a bracket with matches determined from nonempty nodes
-updateBracket : Bracket Match -> Bracket Match
+updateBracket : Bracket -> Bracket
 updateBracket b = case b of
                     Leaf m -> b
                     InnerNode m b1 b2 ->
@@ -103,18 +103,22 @@ updateBracket b = case b of
                         _ -> b
 
 -- Given a match, update it in the bracket
-updateScore : Match -> Bracket Match -> Bracket Match
+updateScore : Match -> Bracket -> Bracket
 updateScore m b = mapBracket (\m' -> if matchEq m m' then m
                                      else m')
                               b
 
 -- Selection updates
-unselect : Bracket Match -> Bracket Match
-unselect b = mapBracket (\m -> case m of Empty -> m
-                                         One b -> One {b | selected <- False}
-                                         Two b1 b2 -> Two {b1 | selected <- False} {b2 | selected <- False}) <| b
+unselect : Match -> Match
+unselect m = case m of Empty -> m
+                       One b -> One {b | selected <- False}
+                       Two b1 b2 -> Two {b1 | selected <- False}
+                                        {b2 | selected <- False}
 
-selectFirst : Bracket Match -> Bracket Match
+unselectBracket : Bracket -> Bracket
+unselectBracket b = mapBracket unselect b
+
+selectFirst : Bracket -> Bracket
 selectFirst b = case b of
                   Leaf m -> case m of
                               Empty -> Leaf Empty
@@ -123,13 +127,13 @@ selectFirst b = case b of
                   InnerNode m b1 b2 -> InnerNode m b1 (selectFirst b2)
 
 
-moveSelected : Direction -> Bracket Match -> Bracket Match
+moveSelected : Direction -> Bracket -> Bracket
 moveSelected d b = b
 
 players = map (\i -> "Player " ++ (show i)) [1..16]
 initialBracket = fromList players
 
-stepBracket : Input -> Bracket Match -> Bracket Match
+stepBracket : Input -> Bracket -> Bracket
 stepBracket inp b = let anySelected =
                           anyBracket (\m -> anyMatch .selected m) b
                     in
@@ -143,10 +147,10 @@ stepBracket inp b = let anySelected =
 type Input = { dir:{x:Int,y:Int}, space:Bool }
 input = Input <~ Keyboard.arrows ~ Keyboard.space
 
-bracketState : Signal (Bracket Match)
+bracketState : Signal (Bracket)
 bracketState = foldp stepBracket initialBracket input
 
-render : (Int,Int) -> Bracket Match -> Element
+render : (Int,Int) -> Bracket -> Element
 render input bracket =
       let (bw,bh,brkt) = renderBracket bracket renderMatch
           (w,h) = (fst input, snd input)
@@ -157,8 +161,8 @@ render input bracket =
       ++ [group br])
        |> collage w h
 
-printState : (Int,Int) -> Bracket Match -> JSString
-printState d b = fromString <| "Rendered at " ++ show d
+printState : (Int,Int) -> Bracket -> JSString
+printState d b = fromString <| "Rendered at " ++ show d ++ " " ++ show b
 
 log = lift2 printState Window.dimensions (dropRepeats bracketState)
 foreign export jsevent "log"

@@ -41,28 +41,28 @@ maxScore m = case m of
                               | .score b2 > .score b1 -> Just b2
                               | otherwise -> Nothing
 -- Tree bracket structure
-data Bracket a = Leaf a
-               | InnerNode a (Bracket a) (Bracket a)
+data Bracket = Leaf Match
+             | InnerNode Match Bracket Bracket
 
 -- Map a function over all values in the bracket
-mapBracket : (a -> a) -> Bracket a -> Bracket a
+mapBracket : (Match -> Match) -> Bracket -> Bracket
 mapBracket fun b = case b of
   Leaf a -> Leaf (fun a)
   InnerNode a b1 b2 -> InnerNode (fun a) (mapBracket fun b1) (mapBracket fun b2)
 
-anyBracket : (a -> Bool) -> Bracket a -> Bool
+anyBracket : (Match -> Bool) -> Bracket -> Bool
 anyBracket fun b = case b of
                      Leaf a -> (fun a)
                      InnerNode a b1 b2 -> (fun a) || anyBracket fun b1 || anyBracket fun b2
 
-renderBracket : Bracket a -> (a -> (Int, Int, Form)) -> (Int, Int, [Form])
+renderBracket : Bracket -> (Match -> (Int, Int, Form)) -> (Int, Int, [Form])
 renderBracket b draw =
   case b of
     Leaf match ->
       let (w,h,drawn) = draw match in
       (w,h,[drawn])
     InnerNode match bl br ->
-      let arrstyle      = {defaultLine | width <- 5, join <- Smooth}
+      let arrstyle      = dashed black
           (w1,h1,left)  = renderBracket bl draw
           (w2,h2,right) = renderBracket br draw
           (w,h, drawn)  = draw match
