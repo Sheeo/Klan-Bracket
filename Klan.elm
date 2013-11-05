@@ -7,17 +7,21 @@ import Keyboard
 import Graphics.Input (hoverable)
 import JavaScript (JSString,fromString)
 
+-- TODO
+--  - Overhaul rendering code into renderBracket.elm
+--  - Overhaul logic into bracket.elm
+
 renderBrack : Brack -> Element
-renderBrack b = let contain = container 200 20
-                in
-                    layers
-                          (Maybe.cons (if .selected b
-                                       then Just (spacer 200 20 |> color red)
-                                       else Nothing)
-                          [ plainText (.name b)
-                             |> contain midLeft,
-                             plainText (show (.score b))
-                             |> contain midRight])
+renderBrack b =
+  let contain = container 200 20
+  in  layers
+            (Maybe.cons (if .selected b
+                         then Just (spacer 200 20 |> color red)
+                         else Nothing)
+            [ plainText (.name b)
+               |> contain midLeft,
+               plainText (show (.score b))
+               |> contain midRight])
 
 renderMatch : Match -> (Int, Int, Form)
 renderMatch m =
@@ -132,6 +136,8 @@ moveSelected d b = b
 
 players = map (\i -> "Player " ++ (show i)) [1..16]
 initialBracket = fromList players
+                 |> updateScore (Two (player "Player 1")
+                                     (playerWithScore "Player 2" 3))
 
 stepBracket : Input -> Bracket -> Bracket
 stepBracket inp b = let anySelected =

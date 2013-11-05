@@ -1,4 +1,5 @@
 module Bracket where
+import Maybe
 
 data BrackType = Player
                | Team
@@ -12,12 +13,14 @@ data Match = Empty
            | One Brack
            | Two Brack Brack
 
+-- Any over matches
 anyMatch : (Brack -> Bool) -> Match -> Bool
 anyMatch fun m = case m of
                   Empty -> False
                   One b -> fun b
                   Two b1 b2 -> fun b1 || fun b2
 
+-- Ctors for common types
 player name = Brack 0 name False Player
 team name   = Brack 0 name False Team
 teamWithScore name score   = Brack score name False Team
@@ -44,16 +47,25 @@ maxScore m = case m of
 data Bracket = Leaf Match
              | InnerNode Match Bracket Bracket
 
--- Map a function over all values in the bracket
+finished : Bracket -> Bool
+finished b = anyBracket
+              (\m -> maxScore m
+                     |> maybe False
+                         (\b -> if .score b >= 2
+                                then True
+                                else False))
+              b
+
 mapBracket : (Match -> Match) -> Bracket -> Bracket
 mapBracket fun b = case b of
   Leaf a -> Leaf (fun a)
   InnerNode a b1 b2 -> InnerNode (fun a) (mapBracket fun b1) (mapBracket fun b2)
 
 anyBracket : (Match -> Bool) -> Bracket -> Bool
-anyBracket fun b = case b of
-                     Leaf a -> (fun a)
-                     InnerNode a b1 b2 -> (fun a) || anyBracket fun b1 || anyBracket fun b2
+anyBracket fun b =
+  case b of
+     Leaf a -> (fun a)
+     InnerNode a b1 b2 -> (fun a) || anyBracket fun b1 || anyBracket fun b2
 
 renderBracket : Bracket -> (Match -> (Int, Int, Form)) -> (Int, Int, [Form])
 renderBracket b draw =
@@ -62,21 +74,24 @@ renderBracket b draw =
       let (w,h,drawn) = draw match in
       (w,h,[drawn])
     InnerNode match bl br ->
-      let arrstyle      = dashed black
+      let barrstyle      = if finished br then dashed black
+                                          else dashed white
+          tarrstyle      = if finished bl then dashed black
+                                          else dashed white
           (w1,h1,left)  = renderBracket bl draw
           (w2,h2,right) = renderBracket br draw
           (w,h, drawn)  = draw match
           left'         = map (move (toFloat (-w - 50), toFloat -h1)) left
-          right'        = map (move (toFloat (-w - 50), toFloat h2)) right
-          tarrw         = traced arrstyle
+          right'        = map (move (toFloat (-w - 50), toFloat h2))  right
+          tarrw         = traced tarrstyle
                            (path [(toFloat -w/2 - 50, toFloat -h1),
-                                 (toFloat -w/2 - 25, toFloat -h1),
-                                 (toFloat -w/2 - 25,0)])
-          barrw         = traced arrstyle
+                                  (toFloat -w/2 - 25, toFloat -h1),
+                                  (toFloat -w/2 - 25,0)])
+          barrw         = traced barrstyle
                            (path [(toFloat -w/2 - 50, toFloat h2),
-                                 (toFloat -w/2 - 25, toFloat h2),
-                                 (toFloat -w/2 - 25,0),
-                                 (toFloat -w/2,0)])
+                                  (toFloat -w/2  - 25, toFloat h2),
+                                  (toFloat -w/2  - 25,0),
+                                  (toFloat -w/2, 0)])
       in
       (w+w1,
        h1+h2,
