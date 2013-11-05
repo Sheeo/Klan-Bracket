@@ -73,11 +73,17 @@ mapBracket fun b = case b of
   Leaf a -> Leaf (fun a)
   InnerNode a b1 b2 -> InnerNode (fun a) (mapBracket fun b1) (mapBracket fun b2)
 
+anyBracketLeaf : (Match -> Bool) -> Bracket -> Bool
+anyBracketLeaf fun b =
+  case b of
+    Leaf a -> fun a
+    InnerNode _ top bot -> anyBracketLeaf fun top || anyBracketLeaf fun bot
+
 anyBracket : (Match -> Bool) -> Bracket -> Bool
 anyBracket fun b =
   case b of
-     Leaf a -> (fun a)
-     InnerNode a b1 b2 -> (fun a) || anyBracket fun b1 || anyBracket fun b2
+    Leaf a -> (fun a)
+    InnerNode a b1 b2 -> (fun a) || anyBracket fun b1 || anyBracket fun b2
 
 allBracket : (Match -> Bool) -> Bracket -> Bool
 allBracket fun b = anyBracket (\m -> not (fun m)) b
@@ -90,7 +96,7 @@ fromList bracketStyle players =
           Leaf _ -> 0
           InnerNode _ b1 b2 -> 1 + min (minDepth b1) (minDepth b2)
       hasFreeSpot : Bracket -> Bool
-      hasFreeSpot = anyBracket <| anyMatch <| isNothing . (.name)
+      hasFreeSpot = anyBracketLeaf <| anyMatch <| isNothing . (.name)
       chooseSide : String -> String -> Bracket -> Bracket
       chooseSide nextMatchId playerName b =
         case b of
