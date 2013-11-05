@@ -7,8 +7,7 @@ import Maybe
 import Color
 
 type Brack = { score:    Int,
-               name:     String,
-               selected: Bool }
+               name:     String }
 
 data Match = Empty
            | One Brack
@@ -22,8 +21,8 @@ anyMatch fun m = case m of
                   Two b1 b2 -> fun b1 || fun b2
 
 -- Ctors for common types
-player name = Brack 0 name False
-playerWithScore name score = Brack score name False
+player name = Brack 0 name
+playerWithScore name score = Brack score name
 
 -- Two brackets are deemed equal if their type and names are equal
 brackEq b1 b2 = .name b1 == .name b2
@@ -75,28 +74,3 @@ lineStyle = { gayPurple | width <- 3,
                           join <- Sharp 0.1}
 
 
-renderBracket : Bracket -> (Match -> (Int, Int, Form)) -> (Int, Int, [Form])
-renderBracket b draw =
-  case b of
-    Leaf match ->
-      let (w,h,drawn) = draw match in
-      (w,h,[drawn])
-    InnerNode match bl br ->
-      let (w1,h1,left)  = renderBracket bl draw
-          (w2,h2,right) = renderBracket br draw
-          (w,h, drawn)  = draw match
-          left'         = map (move (toFloat (-w - 50), toFloat -h1)) left
-          right'        = map (move (toFloat (-w - 50), toFloat h2))  right
-          tarrw         = traced lineStyle
-                           (path [(toFloat -w/2 - 50, toFloat -h1),
-                                  (toFloat -w/2 - 25, toFloat -h1),
-                                  (toFloat -w/2 - 25,0)])
-          barrw         = traced lineStyle
-                           (path [(toFloat -w/2 - 50, toFloat h2),
-                                  (toFloat -w/2  - 25, toFloat h2),
-                                  (toFloat -w/2  - 25,0),
-                                  (toFloat -w/2, 0)])
-      in
-      (w+w1,
-       h1+h2,
-       drawn :: tarrw :: barrw :: (left' ++ right'))
