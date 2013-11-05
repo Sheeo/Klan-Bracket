@@ -1,4 +1,8 @@
 module Bracket where
+{-
+  Bracket is a module for representing tournament "Brackets"
+-}
+
 import Maybe
 import Color
 
