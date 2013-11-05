@@ -6,35 +6,57 @@ import Maybe
 import Keyboard
 import Graphics.Input (hoverable)
 import JavaScript (JSString,fromString)
+import Text
 
--- TODO
---  - Overhaul rendering code into renderBracket.elm
---  - Overhaul logic into bracket.elm
+txt : (Text -> Text) -> String -> Element
+txt f = text . f . toText
 
-renderBrack : Brack -> Element
-renderBrack b =
-  let contain = container 200 20
+renderBrack : Brack -> Bool -> Element
+renderBrack b winner =
+  let contain = container 180 20
+      text = if winner then txt bold else txt id
   in  layers
             (Maybe.cons (if .selected b
                          then Just (spacer 200 20 |> color red)
                          else Nothing)
-            [ plainText (.name b)
+            [ text (.name b)
                |> contain midLeft,
                plainText (show (.score b))
                |> contain midRight])
 
+renderMatch' : Match -> Brack -> Brack -> (Int,Int,Form)
+renderMatch' m p1 p2 = let cont pos elm = container 200 80 pos elm
+                           img  s       = image 200 20 s
+                           winner       = maxScore m
+                           p1won        = maybe False (\b -> brackEq b p1) winner
+                           p2won        = maybe False (\b -> brackEq b p2) winner
+                           remaining    = not p1won && not p2won
+                                          && not (.name p1 /= "Empty!")
+                                          && not (.name p2 /= "Empty!")
+                           finished     = not remaining
+                           inprocCol    = rgba 0 255 0 0.5
+                           finishedCol  = rgba 79 54 153 0.5
+                           remainingCol = rgba 79 54 153 0.2
+                           backColor    = if not remaining then inprocCol
+                                                           else remainingCol
+                       in
+                       (200,50, layers
+                                  [ cont middle (spacer 200 65
+                                                 |> color backColor),
+                                    cont midTop (img "top.png"),
+                                    cont midBottom (img "bottom.png"),
+                                    cont middle (flow down [(renderBrack p1 p1won),
+                                                            (renderBrack p2 p2won)])]
+                                |> toForm)
+
+
 renderMatch : Match -> (Int, Int, Form)
 renderMatch m =
-  case m of
-    Empty ->     (200,0,  spacer 0 0 |> toForm)
-    One p ->     (200,20, renderBrack p |> toForm)
-    Two p1 p2 -> let cont = container 200 20 midLeft
-                 in
-                 (200,40, cont (renderBrack p1)
-                          ::
-                          [cont (renderBrack p2)]
-                          |> flow down
-                          |> toForm)
+  let fake = player "Empty!"
+  in case m of
+    Empty ->     renderMatch' m fake fake
+    One p ->     renderMatch' m p fake
+    Two p1 p2 -> renderMatch' m p1 p2
 
 -- Build an initial bracket from a list of names
 fromList : [String] -> Bracket
@@ -111,6 +133,7 @@ updateScore : Match -> Bracket -> Bracket
 updateScore m b = mapBracket (\m' -> if matchEq m m' then m
                                      else m')
                               b
+                 |> updateBracket
 
 -- Selection updates
 unselect : Match -> Match
