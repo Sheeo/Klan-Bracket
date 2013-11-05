@@ -52,9 +52,14 @@ renderMatch sel m =
     One p ->     renderMatch' sel m p fake
     Two p1 p2 -> renderMatch' sel m p1 p2
 
+
 renderBracket : Selection -> Bracket -> (Int, Int, [Form])
 renderBracket sel b =
-  case b of
+  let gayPurple = solid (rgb 79 54 153)
+      lineStyle = { gayPurple | width <- 3,
+                                cap <- Round,
+                                join <- Sharp 0.1}
+  in case b of
     Leaf match ->
       let (w,h,drawn) = renderMatch sel match in
       (w,h,[drawn])

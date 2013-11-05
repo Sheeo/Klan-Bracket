@@ -9,51 +9,6 @@ import Graphics.Input (hoverable)
 import JavaScript (JSString,fromString)
 import Text
 
--- Build an initial bracket from a list of names
-fromList : [String] -> Bracket
-fromList players =
-  let minDepth : Bracket -> Int
-      minDepth b = case b of
-          Leaf _ -> 0
-          InnerNode _ b1 b2 -> 1 + min (minDepth b1) (minDepth b2)
-      hasFreeSpot : Bracket -> Bool
-      hasFreeSpot b = case b of
-          Leaf m -> case m of
-                      Empty -> True
-                      One _ -> True
-                      _ -> False
-          InnerNode m b1 b2 -> hasFreeSpot b1 || hasFreeSpot b2
-      chooseSide : String -> Bracket -> Bracket
-      chooseSide p b =
-        case b of
-          Leaf m -> Leaf m
-          InnerNode m b1 b2 ->
-                          let b1dep = minDepth b1
-                              b2dep = minDepth b2
-                          in
-                          if b1dep == b2dep then
-                                InnerNode Empty (Leaf (One (player p))) b
-                          else if b1dep > b2dep then
-                                InnerNode Empty b1 (consBracket p b2)
-                          else
-                                InnerNode Empty (consBracket p b1) b2
-      consBracket : String -> Bracket -> Bracket
-      consBracket p b =
-        case b of
-          Leaf m -> case m of
-                      Empty -> Leaf (One (player p))
-                      One p1 -> Leaf (Two p1 (player p))
-                      Two _ _ -> InnerNode Empty (Leaf (One (player p))) b
-          InnerNode m b1 b2 ->
-                    if | hasFreeSpot b1 -> InnerNode m (consBracket p b1) b2
-                       | hasFreeSpot b2 -> InnerNode m b1 (consBracket p b2)
-                       | otherwise -> chooseSide p b
-      build : [String] -> Bracket -> Bracket
-      build ps b =
-        case ps of
-          p1 :: [] -> consBracket p1 b
-          p1 :: ps' -> build ps' (consBracket p1 b)
-  in build players (Leaf Empty)
 
 winners : Bracket -> Bracket -> Match
 winners b1 b2 = let winner : Bracket -> Maybe Brack
@@ -114,7 +69,7 @@ initialBracket = fromList players
                                      (playerWithScore "Player 8" 3))
 
 stepBracket : Input -> Bracket -> Bracket
-stepBracket inp b = b 
+stepBracket inp b = b
 
 type Input = { dir:{x:Int,y:Int}, space:Bool }
 input = Input <~ Keyboard.arrows ~ Keyboard.space
