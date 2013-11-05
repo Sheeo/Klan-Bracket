@@ -109,10 +109,20 @@ winners b1 b2 = let winner : Bracket -> Maybe Brack
                     winner b =
                       case b of
                         Leaf m -> maxScore m
-                        InnerNode m b1 b2 -> maxScore m
+                        InnerNode m b1 b2 ->
+                          let ownmax = maxScore m
+                              b1max  = maxScore (match b1)
+                              b2max  = maxScore (match b2)
+                          in if | isJust ownmax -> ownmax
+                                | isJust b1max -> b1max
+                                | isJust b2max -> b2max
+                                | otherwise -> Nothing
                 in
                 case ((winner b1), (winner b2)) of
-                  (Just w1, Just w2) -> Two {w2 | score <- 0} {w1 | score <- 0}
+                  (Just w1, Just w2) -> Two {w2 | score <- 0}
+                                            {w1 | score <- 0}
+                  (Just w1,Nothing) ->  One {w1 | score <- 0}
+                  (Nothing,Just w2) ->  One {w2 | score <- 0}
                   _ -> Empty
 
 
@@ -159,8 +169,20 @@ moveSelected d b = b
 
 players = map (\i -> "Player " ++ (show i)) [1..16]
 initialBracket = fromList players
-                 |> updateScore (Two (player "Player 1")
+                 |> updateScore (Two (playerWithScore "Player 1" 1)
                                      (playerWithScore "Player 2" 3))
+                 |> updateScore (Two (player "Player 3")
+                                     (playerWithScore "Player 4" 3))
+                 |> updateScore (Two (player "Player 2")
+                                     (playerWithScore "Player 4" 3))
+                 |> updateScore (Two (player "Player 5")
+                                     (playerWithScore "Player 6" 3))
+                 |> updateScore (Two (player "Player 7")
+                                     (playerWithScore "Player 8" 3))
+                 |> updateScore (Two (player "Player 6")
+                                     (playerWithScore "Player 8" 3))
+                 |> updateScore (Two (player "Player 4")
+                                     (playerWithScore "Player 8" 3))
 
 stepBracket : Input -> Bracket -> Bracket
 stepBracket inp b = let anySelected =
@@ -194,6 +216,7 @@ printState : (Int,Int) -> Bracket -> JSString
 printState d b = fromString <| "Rendered at " ++ show d ++ " " ++ show b
 
 log = lift2 printState Window.dimensions (dropRepeats bracketState)
+
 foreign export jsevent "log"
   log : Signal JSString
 

@@ -1,13 +1,10 @@
 module Bracket where
 import Maybe
-
-data BrackType = Player
-               | Team
+import Color
 
 type Brack = { score:    Int,
                name:     String,
-               selected: Bool,
-               typ:      BrackType}
+               selected: Bool }
 
 data Match = Empty
            | One Brack
