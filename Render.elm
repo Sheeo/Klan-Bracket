@@ -51,9 +51,9 @@ renderBracket sel b =
     Leaf match ->
       let (w,h,drawn) = renderMatch sel match in
       (w,h,[drawn])
-    InnerNode match bl br ->
-      let (w1,h1,left)  = renderBracket sel bl
-          (w2,h2,right) = renderBracket sel br
+    InnerNode match top bottom ->
+      let (w1,h1,right)  = renderBracket sel top
+          (w2,h2,left) = renderBracket sel bottom
           (w,h, drawn)  = renderMatch sel match
           left'         = map (move (toFloat (-w - 50), toFloat -h1)) left
           right'        = map (move (toFloat (-w - 50), toFloat h2))  right
