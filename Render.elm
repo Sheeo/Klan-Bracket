@@ -19,31 +19,32 @@ renderBrack sel b winner =
                |> contain midRight])
 
 renderMatch : Selection -> Match -> (Int,Int,Form)
-renderMatch sel m = let cont pos elm = container 200 80 pos elm
-                        img  s       = image 200 20 s
-                        winner       = Nothing --maxScore m
-                        p1won        = maybe False (\b -> brackEq b (.top m)) winner
-                        p2won        = maybe False (\b -> brackEq b (.bottom m)) winner
-                        remaining    = not p1won && not p2won
-                        finished     = not remaining
-                        inprocCol    = rgba 0 255 0 0.5
-                        finishedCol  = rgba 79 54 153 0.5
-                        remainingCol = rgba 79 54 153 0.2
-                        backColor    = if not remaining then inprocCol
-                                                        else remainingCol
-                       in
-                       (200,50, container 200 15 midBottom (txt id (.title m))
-                                `above`
-                                layers
-                                  [ cont middle (spacer 200 65
-                                                 |> color backColor),
-                                    cont midTop (img "top.png"),
-                                    cont midBottom (img "bottom.png"),
-                                    cont middle (flow down [(renderBrack sel (.top m) p1won),
-                                                            (renderBrack sel (.bottom m) p2won)])]
-                                `above` container 200 15 midBottom (spacer 0 0 |> color white)
-                                |> toForm
-                                )
+renderMatch sel m =
+  let cont pos elm = container 200 80 pos elm
+      img  s       = image 200 20 s
+      winner       = Nothing --maxScore m
+      p1won        = maybe False (\b -> brackEq b (.top m)) winner
+      p2won        = maybe False (\b -> brackEq b (.bottom m)) winner
+      remaining    = not p1won && not p2won
+      finished     = not remaining
+      inprocCol    = rgba 0 255 0 0.5
+      finishedCol  = rgba 79 54 153 0.5
+      remainingCol = rgba 79 54 153 0.2
+      backColor    = if not remaining then inprocCol
+                                      else remainingCol
+     in
+     (200,50, container 200 15 (middleAt (Absolute 95) (Absolute 7)) (justified (toText (.title m)))
+              `above`
+              layers
+                [ cont middle (spacer 200 65
+                               |> color backColor),
+                  cont midTop (img "top.png"),
+                  cont midBottom (img "bottom.png"),
+                  cont middle (flow down [(renderBrack sel (.top m) p1won),
+                                          (renderBrack sel (.bottom m) p2won)])]
+              `above` container 200 15 midBottom (spacer 0 0 |> color white)
+              |> toForm
+              )
 
 renderBracket : Selection -> Bracket -> (Int, Int, [Form])
 renderBracket sel b =

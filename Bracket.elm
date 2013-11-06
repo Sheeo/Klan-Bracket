@@ -73,6 +73,23 @@ mapBracket fun b = case b of
   Leaf a -> Leaf (fun a)
   InnerNode a b1 b2 -> InnerNode (fun a) (mapBracket fun b1) (mapBracket fun b2)
 
+foldBracket : (Match -> a -> a) -> a -> Bracket -> a
+foldBracket fun acc b =
+  case b of
+    Leaf a -> fun a acc
+    InnerNode a top bot ->
+      let topacc = foldBracketLeaf fun acc top
+          botacc = foldBracketLeaf fun topacc bot
+      in fun a botacc
+
+foldBracketLeaf : (Match -> a -> a) -> a -> Bracket -> a
+foldBracketLeaf fun acc b =
+  case b of
+    Leaf a -> fun a acc
+    InnerNode _ top bot ->
+      let topacc = foldBracketLeaf fun acc top
+      in foldBracketLeaf fun topacc bot
+
 anyBracketLeaf : (Match -> Bool) -> Bracket -> Bool
 anyBracketLeaf fun b =
   case b of
@@ -97,59 +114,46 @@ fromList bracketStyle players =
           InnerNode _ b1 b2 -> 1 + min (minDepth b1) (minDepth b2)
       hasFreeSpot : Bracket -> Bool
       hasFreeSpot = anyBracketLeaf <| anyMatch <| isNothing . (.name)
-      chooseSide : String -> String -> Bracket -> Bracket
-      chooseSide nextMatchId playerName b =
+      nextMatchId : Bracket -> Int
+      nextMatchId b = foldBracketLeaf (\_ acc -> acc + 1) 1 b
+      nilmatch = emptyMatch ""
+      chooseSide : String -> Bracket -> Bracket -> Bracket
+      chooseSide playerName b bfull =
         case b of
           Leaf m -> b
           InnerNode m top bot ->
                           let topdep = minDepth top
                               botdep = minDepth bot
-                              nextMatch = emptyMatch nextMatchId
                           in
                           if topdep == botdep then
-                                InnerNode nextMatch b (Leaf (Match nextMatchId (player playerName) emptyPlayer))
+                                InnerNode nilmatch b (Leaf (Match (nextMatchId bfull |> show) (player playerName) emptyPlayer))
                           else if topdep > botdep then
-                                InnerNode nextMatch top (consBracket playerName bot)
+                                InnerNode nilmatch top (consBracket playerName bot bfull)
                           else
-                                InnerNode nextMatch (consBracket playerName top) bot
-      consBracket : String -> Bracket -> Bracket
-      consBracket p b =
+                                InnerNode nilmatch (consBracket playerName top bfull) bot
+      consBracket : String -> Bracket -> Bracket -> Bracket
+      consBracket p b bfull =
         case b of
           Leaf m -> if | .name (.top m) == Nothing    -> Leaf {m | top <- player p}
                        | .name (.bottom m) == Nothing -> Leaf {m | bottom <- player p}
-                       | otherwise -> InnerNode (emptyMatch "Test") (Leaf m) (Leaf (Match "Test" (player p) emptyPlayer))
+                       | otherwise -> let top = Leaf m
+                                          bot = Leaf (Match (nextMatchId bfull |> show) (player p) emptyPlayer)
+                                      in
+                                      InnerNode (Match ""
+                                                       (Brack Nothing Nothing (Just (WinnerOf, .title (topMatch top))))
+                                                       (Brack Nothing Nothing (Just (WinnerOf, .title (topMatch bot)))))
+                                                top
+                                                bot
           InnerNode m b1 b2 ->
-                    if | hasFreeSpot b1 -> InnerNode m (consBracket p b1) b2
-                       | hasFreeSpot b2 -> InnerNode m b1 (consBracket p b2)
-                       | otherwise -> chooseSide "Test..." p b
+                    if | hasFreeSpot b1 -> InnerNode m (consBracket p b1 bfull) b2
+                       | hasFreeSpot b2 -> InnerNode m b1 (consBracket p b2 bfull)
+                       | otherwise -> chooseSide p b bfull
       build : [String] -> Bracket -> Bracket
       build ps b =
         case ps of
-          p1 :: [] -> consBracket p1 b
-          p1 :: ps' -> build ps' (consBracket p1 b)
-  in build players (Leaf (emptyMatch "0"))
-
---winners : Bracket -> Bracket -> Match
---winners b1 b2 = let winner : Bracket -> Maybe Brack
---                    winner b =
---                      case b of
---                        Leaf m -> maxScore m
---                        InnerNode m b1 b2 ->
---                          let ownmax = maxScore m
---                              b1max  = maxScore (match b1)
---                              b2max  = maxScore (match b2)
---                          in if | isJust ownmax -> ownmax
---                                | isJust b1max -> b1max
---                                | isJust b2max -> b2max
---                                | otherwise -> Nothing
---                in
---                case ((winner b1), (winner b2)) of
---                  (Just w1, Just w2) -> Two {w2 | score <- 0}
---                                            {w1 | score <- 0}
---                  (Just w1,Nothing) ->  One {w1 | score <- 0}
---                  (Nothing,Just w2) ->  One {w2 | score <- 0}
---                  _ -> Empty
-
+          p1 :: [] -> consBracket p1 b b
+          p1 :: ps' -> build ps' (consBracket p1 b b)
+  in build players (Leaf (emptyMatch "1"))
 
 -- Update a bracket with matches determined from winners
 updateBracket : WinningCriteria -> Bracket -> Bracket
