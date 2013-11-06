@@ -32,14 +32,18 @@ renderMatch sel m = let cont pos elm = container 200 80 pos elm
                         backColor    = if not remaining then inprocCol
                                                         else remainingCol
                        in
-                       (200,50, layers
+                       (200,50, container 200 15 midBottom (txt id (.title m))
+                                `above`
+                                layers
                                   [ cont middle (spacer 200 65
                                                  |> color backColor),
                                     cont midTop (img "top.png"),
                                     cont midBottom (img "bottom.png"),
                                     cont middle (flow down [(renderBrack sel (.top m) p1won),
                                                             (renderBrack sel (.bottom m) p2won)])]
-                                |> toForm)
+                                `above` container 200 15 midBottom (spacer 0 0 |> color white)
+                                |> toForm
+                                )
 
 renderBracket : Selection -> Bracket -> (Int, Int, [Form])
 renderBracket sel b =
@@ -52,8 +56,8 @@ renderBracket sel b =
       let (w,h,drawn) = renderMatch sel match in
       (w,h,[drawn])
     InnerNode match top bottom ->
-      let (w1,h1,right)  = renderBracket sel top
-          (w2,h2,left) = renderBracket sel bottom
+      let (w1,h1,right) = renderBracket sel top
+          (w2,h2,left)  = renderBracket sel bottom
           (w,h, drawn)  = renderMatch sel match
           left'         = map (move (toFloat (-w - 50), toFloat -h1)) left
           right'        = map (move (toFloat (-w - 50), toFloat h2))  right
