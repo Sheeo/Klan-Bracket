@@ -12,7 +12,7 @@ import Marshal
 
 style = BracketStyle Single (BestOf 3)
 
-players = map (\i -> "Player " ++ (show i)) [1..16]
+players = map (\i -> "Player " ++ (show i)) [1..8]
 initialBracket = fromList style players
 
 stepBracket : Input -> Bracket -> Bracket
@@ -43,11 +43,12 @@ render sel input bracket =
        |> collage w h
 
 printState : (Int,Int) -> Bracket -> JSString
-printState d b = fromString <| "Rendered at " ++ show d ++ " " ++ show b
+printState d b = fromString <| "Rendered at " ++ show d
 
 log = lift2 printState Window.dimensions (dropRepeats bracketState)
 
-foreign export jsevent "log"
+foreign export jsevent "bracketLog"
   log : Signal JSString
 
+main : Signal Element
 main = lift3 render (constant {brack=Nothing}) Window.dimensions (dropRepeats bracketState)
