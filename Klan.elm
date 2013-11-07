@@ -8,6 +8,7 @@ import Keyboard
 import Graphics.Input (hoverable)
 import JavaScript (JSString,fromString)
 import Text
+import Marshal
 
 style = BracketStyle Single (BestOf 3)
 
@@ -17,8 +18,15 @@ initialBracket = fromList style players
 stepBracket : Input -> Bracket -> Bracket
 stepBracket inp b = b
 
-type Input = { dir:{x:Int,y:Int}, space:Bool }
-input = Input <~ Keyboard.arrows ~ Keyboard.space
+foreign import jsevent "action" (fromString "nop")
+  action : Signal JSString
+
+type Input = { dir:{x:Int,y:Int},
+               space: Bool,
+               action: JSString }
+input = Input <~ Keyboard.arrows
+                 ~ Keyboard.space
+                 ~ action
 
 bracketState : Signal (Bracket)
 bracketState = foldp stepBracket initialBracket input
