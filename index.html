@@ -8,10 +8,31 @@
         <script type="text/javascript" src="elm-runtime.js">
         </script>
         <script type="text/javascript" src="build/klan.js"></script>
+        <script type="text/javascript" src="/socket.io/socket.io.js"></script>
     </head>
     <body>
         <script type="text/javascript">
-            Elm.fullscreen(Elm.Main);
+            var app = Elm.fullscreen(Elm.Main);
+
+            var socket = io.connect("http://192.168.1.63:8080");
+            socket.on('reload', function(data) {
+              socket.emit('reloading', "");
+              location.reload();
+            });
+            socket.on('addBracket', function(data) {
+              app.send('addBracket', data);
+            });
+            socket.on('addPlayer', function(data) {
+              app.send('addPlayer', data);
+            });
+            socket.on('removeBracket', function(data) {
+              app.send('removeBracket', data);
+            });
+            app.recv('bracketLog', function(evt) {
+              console.log("Sending");
+              console.log(evt.value);
+              socket.emit('bracketLog', evt.value);
+            });
         </script>
         <noscript>
         </noscript>
