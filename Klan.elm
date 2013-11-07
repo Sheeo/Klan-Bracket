@@ -6,27 +6,30 @@ import Window
 import Maybe
 import Keyboard
 import Graphics.Input (hoverable)
-import JavaScript (JSString,fromString)
 import Text
-import Marshal
+import JavaScript (JSString,JSObject,fromString)
+import open Marshal
 
 style = BracketStyle Single (BestOf 3)
 
 players = map (\i -> "Player " ++ (show i)) [1..8]
 initialBracket = fromList style players
 
-stepBracket : Input -> Bracket -> Bracket
-stepBracket inp b = b
-
-foreign import jsevent "action" (fromString "nop")
-  action : Signal JSString
+foreign import jsevent "action" (defaultJSObject)
+  action : Signal JSObject
 
 type Input = { dir:{x:Int,y:Int},
                space: Bool,
-               action: JSString }
+               jsinput: JSInput }
 input = Input <~ Keyboard.arrows
                  ~ Keyboard.space
-                 ~ action
+                 ~ (fromJS <~ action)
+
+stepBracket : Input -> Bracket -> Bracket
+stepBracket ({dir,space,jsinput} as inp) b =
+  case .action jsinput of
+    "resetBrackets" -> maybe b id (.bracket jsinput)
+    _ -> b
 
 bracketState : Signal (Bracket)
 bracketState = foldp stepBracket initialBracket input
@@ -45,7 +48,7 @@ render sel input bracket =
 printState : (Int,Int) -> Bracket -> JSString
 printState d b = fromString <| "Rendered at " ++ show d
 
-log = lift2 printState Window.dimensions (dropRepeats bracketState)
+log = lift2 printState Window.dimensions bracketState
 
 foreign export jsevent "bracketLog"
   log : Signal JSString

@@ -20,13 +20,15 @@
               location.reload();
             });
             socket.on('addBracket', function(data) {
-              app.send('addBracket', data);
+              app.send('action', {action:"addBracket", bracket:{}});
             });
             socket.on('addPlayer', function(data) {
               app.send('addPlayer', data);
             });
-            socket.on('removeBracket', function(data) {
-              app.send('removeBracket', data);
+            socket.on('resetBrackets', function(data) {
+              console.log("Resetting");
+              console.log(data);
+              app.send('action', {action:"resetBrackets", bracket:{valid:true}});
             });
             app.recv('bracketLog', function(evt) {
               console.log("Sending");
