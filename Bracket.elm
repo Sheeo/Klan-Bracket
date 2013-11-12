@@ -23,6 +23,10 @@ data WinningCriteria = BestOf Int
 type BracketStyle = { elimination: EliminationStyle,
                       winCriteria: WinningCriteria }
 
+type BracketDesc = { title: String,
+                     style: BracketStyle,
+                     bracket: Maybe Bracket}
+
 
 -- Any over matches
 anyMatch : (Brack -> Bool) -> Match -> Bool
@@ -151,6 +155,7 @@ fromList bracketStyle players =
       build : [String] -> Bracket -> Bracket
       build ps b =
         case ps of
+          [] -> b
           p1 :: [] -> consBracket p1 b b
           p1 :: ps' -> build ps' (consBracket p1 b b)
   in build players (Leaf (emptyMatch "1"))
@@ -170,3 +175,5 @@ updateScore : Match -> Bracket -> Bracket
 updateScore m b = mapBracket (\m' -> if matchEq m m' then m
                                      else m')
                               b
+
+createBracket title style = BracketDesc title style Nothing

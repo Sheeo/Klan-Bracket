@@ -20,12 +20,21 @@ bracketFromJS o =
     "Leaf" -> Just (Leaf (emptyMatch "1"))
     _ -> Nothing
 
-type JSInput = {action: String, bracket: Maybe Bracket}
+data Action = ResetBracket String
+            | AddBracket String
+            | RemoveBracket String
+            | AddPlayer String String
+            | Nop
 
-defaultJSObject = JS.fromRecord {action="nop", bracket = {}}
+actionFromJSObject jso =
+  case jso.actiontype of
+    _ -> Nop
+
+type JSInput = { action: Action }
+
+defaultJSObject = JS.fromRecord { actiontype = "nop" }
 
 fromJS : JSObject -> JSInput
 fromJS obj =
   let inp = JS.toRecord obj
-  in { action = inp.action,
-       bracket = bracketFromJS inp.bracket }
+  in { action = actionFromJSObject inp.actiontype }
