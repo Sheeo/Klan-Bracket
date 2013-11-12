@@ -367,7 +367,9 @@ Elm.Native.JavaScript.make = function(elm) {
 
   function toJS(v) {
       var type = typeof v;
-      if (type === 'number' || type === 'boolean') return v;
+      if (type === 'number'
+         || type === 'string'
+         || type === 'boolean') return v;
       if (type === 'object' && '_' in v) {
           var obj = {};
           for (var k in v) {
